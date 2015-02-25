@@ -8,26 +8,60 @@ __author__ = 'ipetrash'
 # http://algolist.manual.ru/syntax/parsear.php
 # http://e-learning.bmstu.ru/moodle/file.php/1/common_files/library/SPO/Compil/bmstu_iu6_Sysprogr_Compiles.pdf
 
+# TODO: доработать: алгоритм работает только с односимвольными числами
+# TODO: поддерживать вещественные числа
+
 if __name__ == '__main__':
-    # def is_function(c):
-    #     return c in ['+', '-', '*', '/']
-    #
-    #
-    # def priority_function(c):
-    #     priority = {
-    #         '+': 1,
-    #         '-': 1,
-    #         '*': 2,
-    #         '/': 2,
-    #     }
-    #
-    #     if not c in priority:
-    #         raise Exception('Не найден оператор "{}"'.format(c))
-    #
-    #     return priority.get(c)
+    def is_function(c):
+        return c in ['+', '-', '*', '/']
 
 
-    exp = "(2 + (2 + 3 + 1) - 4)"
+    def priority_function(c):
+        priority = {
+            '+': 2,
+            '-': 2,
+            '*': 1,
+            '/': 1,
+        }
+
+        if not c in priority:
+            raise Exception('Не найден оператор "{}"'.format(c))
+
+        return priority.get(c)
+
+
+    def execute_function(functions, operands):
+        if len(operands) < 2:
+            return
+
+        a, b = operands.pop(), operands.pop()
+        f = functions.pop()
+
+        if f == '+':
+            operands.append(b + a)
+        elif f == '-':
+            operands.append(b - a)
+        elif f == '*':
+            operands.append(b * a)
+        elif f == '/':
+            operands.append(b // a)
+
+    def can_pop(c, function):
+        if not function:
+            return False
+
+        head = function[-1]
+        if not is_function(head):
+            return False
+
+        p1 = priority_function(c)
+        p2 = priority_function(head)
+
+        return p1 >= p2
+
+
+    exp = "(((2 + ((2 * 2) + 2 * 2)) + 2 * 3) / 2 + 3 * 2 - 4)"
+    exp = "(2 + 1 * 2 + 1)"
 
     operands = []
     functions = []
@@ -39,26 +73,27 @@ if __name__ == '__main__':
         elif c.isdigit():
             operands.append(int(c))
 
-        elif c in ['+', '-']:
-        # elif is_function(c):
+        elif is_function(c):
+            while can_pop(c, functions):
+                print(c, functions[-1], priority_function(c), priority_function(functions[-1]), ': ', operands)
+                execute_function(functions, operands)
+
             functions.append(c)
 
         elif c == '(':
             functions.append(c)
 
         elif c == ')':
+            # Выталкиваем все операторы (функции) до открывающей скобки
+            while functions and functions[-1] != '(':
+                execute_function(functions, operands)
+
+            # Убираем последнюю скобку '('
             f = functions.pop()
 
-            # Выталкиваем все операторы (функции) до открывающей скобки
-            while f != '(':
-                a, b = operands.pop(), operands.pop()
+    if functions or len(operands) > 1:
+        raise Exception('Неверное выражение')
 
-                if f == '+':
-                    operands.append(b + a)
-                elif f == '-':
-                    operands.append(b - a)
-
-                f = functions.pop()
-
-
+    print(operands)
+    print(functions)
     print(exp + " = " + str(operands[0]))
