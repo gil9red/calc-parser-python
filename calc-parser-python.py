@@ -4,17 +4,22 @@ __author__ = 'ipetrash'
 """Скрипт является парсером простых арифметических выражений."""
 
 
+OPERATORS = {
+    '+': 2,
+    '-': 2,
+    '*': 1,
+    '/': 1,
+}
+
+
 def is_function(c):
-    return c in ['+', '-', '*', '/']
+    return c in OPERATORS.keys()
 
 def priority_function(c):
     if not is_function(c):
         raise Exception('Не найден оператор "{}"'.format(c))
 
-    if c == '+' or c == '-':
-        return 2
-    elif c == '*' or c == '/':
-        return 1
+    return OPERATORS[c]
 
 def execute_function(functions, operands):
     if len(operands) < 2:
@@ -30,7 +35,6 @@ def execute_function(functions, operands):
     elif f == '*':
         operands.append(b * a)
     elif f == '/':
-        print('b/a', b, a, b / a)
         operands.append(b / a)
 
 def can_pop(c, function):
