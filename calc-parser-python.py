@@ -30,7 +30,8 @@ def execute_function(functions, operands):
     elif f == '*':
         operands.append(b * a)
     elif f == '/':
-        operands.append(b // a)
+        print('b/a', b, a, b / a)
+        operands.append(b / a)
 
 def can_pop(c, function):
     if not function:
@@ -43,12 +44,15 @@ def can_pop(c, function):
     p1 = priority_function(c)
     p2 = priority_function(head)
 
+    # Чем больше значение приоритета, тем меньше он
+    # Например: операции * и / имеют больший приоритет, чем + и -
     return p1 >= p2
 
 
 # http://habrahabr.ru/post/50196/
 # http://algolist.manual.ru/syntax/parsear.php
 # http://e-learning.bmstu.ru/moodle/file.php/1/common_files/library/SPO/Compil/bmstu_iu6_Sysprogr_Compiles.pdf
+
 
 # TODO: доработать: алгоритм работает только с односимвольными числами
 # TODO: поддерживать вещественные числа
@@ -67,7 +71,7 @@ def calculate_expression(exp):
             continue
 
         elif c.isdigit():
-            operands.append(int(c))
+            operands.append(float(c))
 
         elif is_function(c):
             # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
@@ -90,10 +94,7 @@ def calculate_expression(exp):
             functions.pop()
 
     if functions or len(operands) > 1:
-        raise Exception('Неверное выражение')
-
-    # print(operands)
-    # print(functions)
+        raise Exception('Неверное выражение: operands={}, functions={}'.format(operands, functions))
 
     # Единственным значением списка operands будет результат выражения
     return operands[0]
