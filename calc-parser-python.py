@@ -60,11 +60,6 @@ def can_pop(c, function):
 
 # TODO: доработать: алгоритм работает только с односимвольными числами
 # TODO: поддерживать вещественные числа
-# TODO: разруливать ситуации, когда после первой скобки '(' идет знак + или -
-# // разруливаем унарный + и -
-#    if (prevToken == "("
-#       && (token == "+" || token == "-"))
-#         operands.push("0"); // Добавляем нулевой элемент
 
 
 def calculate_expression(exp):
@@ -82,6 +77,10 @@ def calculate_expression(exp):
             operands.append(float(c))
 
         elif is_function(c):
+            # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
+            if functions and functions[-1] == '(' and (c == '+' or c == '-'):
+                operands.append(0)
+
             # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
             # оператор на вершине стека functions
             # Например, с='+', а head='*', тогда выполнится операция head
@@ -109,11 +108,23 @@ def calculate_expression(exp):
 
 
 if __name__ == '__main__':
-    exp = "(((2 + ((2 * 2) + 2 * 2)) + 2 * 3) / 2 + 3 * 2 - 4)"
+    # exp = "(((2 + ((2 * 2) + 2 * 2)) + 2 * 3) / 2 + 3 * 2 - 4)"
+    # print(exp + " = " + str(calculate_expression(exp)))
+    #
+    # exp = "(2 + 1 * 2 + 1)"
+    # print(exp + " = " + str(calculate_expression(exp)))
+    #
+    # exp = "(2 * 1 * 2 / 1 / 2 * 2 * 2 / (4 + 2))"
+    # print(exp + " = " + str(calculate_expression(exp)))
+
+    exp = "(-2 + 1)"
     print(exp + " = " + str(calculate_expression(exp)))
 
-    exp = "(2 + 1 * 2 + 1)"
+    exp = "(+2 + 1 + (-1 - 1))"
     print(exp + " = " + str(calculate_expression(exp)))
 
-    exp = "(2 * 1 * 2 / 1 / 2 * 2 * 2 / (4 + 2))"
+    exp = "(+2 + 1 - (-1 - 1))"
+    print(exp + " = " + str(calculate_expression(exp)))
+
+    exp = "((+2 + 1 - (-1 - 1)) * (-1))"
     print(exp + " = " + str(calculate_expression(exp)))
