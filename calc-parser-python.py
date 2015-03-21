@@ -12,6 +12,12 @@ class Parser:
         self.exp = exp
         self.prev_token = None
 
+        # Стек операндов (например, числа)
+        self.operands = []
+
+        # Стек операторов (функций, например +, *, и т.п.)
+        self.functions = []
+
     OPERATORS = {
         '+': 2,
         '-': 2,
@@ -30,29 +36,27 @@ class Parser:
 
         return Parser.OPERATORS[c]
 
-    @staticmethod
-    def execute_function(functions, operands):
-        if len(operands) < 2:
+    def execute_function(self):
+        if len(self.operands) < 2:
             return
 
-        a, b = operands.pop(), operands.pop()
-        f = functions.pop()
+        a, b = self.operands.pop(), self.operands.pop()
+        f = self.functions.pop()
 
         if f == '+':
-            operands.append(b + a)
+            self.operands.append(b + a)
         elif f == '-':
-            operands.append(b - a)
+            self.operands.append(b - a)
         elif f == '*':
-            operands.append(b * a)
+            self.operands.append(b * a)
         elif f == '/':
-            operands.append(b / a)
+            self.operands.append(b / a)
 
-    @staticmethod
-    def can_pop(c, function):
-        if not function:
+    def can_pop(self, c):
+        if not self.functions:
             return False
 
-        head = function[-1]
+        head = self.functions[-1]
         if not Parser.is_function(head):
             return False
 
@@ -64,50 +68,45 @@ class Parser:
         return p1 >= p2
 
     def calculate_expression(self):
-        # Стек операндов (например, числа)
-        operands = []
-
-        # Стек операторов (функций, например +, *, и т.п.)
-        functions = []
-
         for c in self.exp:
             if c.isspace():
                 continue
 
             elif c.isdigit():
-                operands.append(float(c))
+                # TODO: проверять значение, ведь это может быть и int
+                self.operands.append(float(c))
 
             elif Parser.is_function(c):
                 # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
                 if self.prev_token and self.prev_token == '(' and (c == '+' or c == '-'):
-                    operands.append(0)
+                    self.operands.append(0)
 
                 # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
                 # оператор на вершине стека functions
                 # Например, с='+', а head='*', тогда выполнится операция head
-                while Parser.can_pop(c, functions):
-                    Parser.execute_function(functions, operands)
+                while self.can_pop(c):
+                    self.execute_function()
 
-                functions.append(c)
+                self.functions.append(c)
 
             elif c == '(':
-                functions.append(c)
+                self.functions.append(c)
 
             elif c == ')':
                 # Выталкиваем все операторы (функции) до открывающей скобки
-                while functions and functions[-1] != '(':
-                    Parser.execute_function(functions, operands)
+                while self.functions and self.functions[-1] != '(':
+                    self.execute_function()
 
                 # Убираем последнюю скобку '('
-                functions.pop()
+                self.functions.pop()
 
             self.prev_token = c
 
-        if functions or len(operands) > 1:
-            raise Exception('Неверное выражение: operands={}, functions={}'.format(operands, functions))
+        if self.functions or len(self.operands) > 1:
+            raise Exception('Неверное выражение: operands={}, functions={}'.format(self.operands, self.functions))
 
         # Единственным значением списка operands будет результат выражения
-        return operands[0]
+        return self.operands[0]
 
 
 # http://habrahabr.ru/post/50196/
@@ -123,11 +122,8 @@ if __name__ == '__main__':
     exp = "(1 + 2 * 2 + 2)"
     print(exp + " = " + str(Parser(exp).calculate_expression()))
 
-    exp = "(-2 + 1)"
-    print(exp + " = " + str(Parser(exp).calculate_expression()))
-
-    exp = "(+2 + 1 + (-1 - 1))"
-    print(exp + " = " + str(Parser(exp).calculate_expression()))
-
     exp = "(3 + (-1 - 1))"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
+
+    exp = "(3 + (-1 + (2 * 3 - 1) - 1))"
     print(exp + " = " + str(Parser(exp).calculate_expression()))
