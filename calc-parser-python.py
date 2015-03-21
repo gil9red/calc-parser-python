@@ -10,6 +10,7 @@ __author__ = 'ipetrash'
 class Parser:
     def __init__(self, exp):
         self.exp = exp
+        self.prev_token = None
 
     OPERATORS = {
         '+': 2,
@@ -78,7 +79,7 @@ class Parser:
 
             elif Parser.is_function(c):
                 # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
-                if functions and functions[-1] == '(' and not operands and (c == '+' or c == '-'):
+                if self.prev_token and self.prev_token == '(' and (c == '+' or c == '-'):
                     operands.append(0)
 
                 # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
@@ -95,11 +96,12 @@ class Parser:
             elif c == ')':
                 # Выталкиваем все операторы (функции) до открывающей скобки
                 while functions and functions[-1] != '(':
-                    # print(functions, operands)
                     Parser.execute_function(functions, operands)
 
                 # Убираем последнюю скобку '('
                 functions.pop()
+
+            self.prev_token = c
 
         if functions or len(operands) > 1:
             raise Exception('Неверное выражение: operands={}, functions={}'.format(operands, functions))
@@ -118,14 +120,14 @@ class Parser:
 
 
 if __name__ == '__main__':
-    # exp = "(1 + 2 * 2 + 2)"
-    # print(exp + " = " + str(Parser(exp).calculate_expression()))
-    #
-    # exp = "(-2 + 1)"
-    # print(exp + " = " + str(Parser(exp).calculate_expression()))
+    exp = "(1 + 2 * 2 + 2)"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
 
-    # exp = "(+2 + 1 + (-1 - 1))"
-    # print(exp + " = " + str(Parser(exp).calculate_expression()))
+    exp = "(-2 + 1)"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
 
-    exp = "(3 + (-1 - 1))".replace(' ', '')
+    exp = "(+2 + 1 + (-1 - 1))"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
+
+    exp = "(3 + (-1 - 1))"
     print(exp + " = " + str(Parser(exp).calculate_expression()))
