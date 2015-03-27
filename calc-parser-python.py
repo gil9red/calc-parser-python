@@ -18,6 +18,8 @@ class Parser:
         # Стек операторов (функций, например +, *, и т.п.)
         self.functions = []
 
+        self.pos = 0
+
     OPERATORS = {
         '+': 2,
         '-': 2,
@@ -67,46 +69,99 @@ class Parser:
         # Например: операции * и / имеют больший приоритет, чем + и -
         return p1 >= p2
 
+    # TODO: мне кажется, это можно и вынести из класса
+    @staticmethod
+    def isfloat(number):
+        try:
+            float(number)
+            return True
+        except ValueError:
+            return False
+
+    def read_number(self):
+        res = ''
+        point = 0
+
+        c = self.exp[self.pos]
+
+        while c.isdigit() or c == '.':
+            if c == '.':
+                point += 1
+                if point > 1:
+                    raise Exception('Выражение не верное -- слишком '
+                                    'много точек (pos: %s)' % self.pos)
+
+            res += c
+            self.pos += 1
+
+            c = self.exp[self.pos]
+
+        return res
+
+    def get_token(self):
+        for i in range(self.pos, len(self.exp)):
+            c = self.exp[i]
+
+            if c.isdigit():
+                return self.read_number()
+            else:
+                self.pos += 1
+                return c
+
+        return None
+
     def calculate_expression(self):
-        for c in self.exp:
-            if c.isspace():
-                continue
+        self.pos = 0
 
-            elif c.isdigit():
-                # TODO: проверять значение, ведь это может быть и int
-                self.operands.append(float(c))
+        token = self.get_token()
 
-            elif Parser.is_function(c):
-                # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
-                if self.prev_token and self.prev_token == '(' and (c == '+' or c == '-'):
-                    self.operands.append(0)
+        while token:
+            if token != ' ':
+                print('"%s", self.isfloat: %s' % (token, self.isfloat(token)))
+                import time
+                time.sleep(1)
 
-                # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
-                # оператор на вершине стека functions
-                # Например, с='+', а head='*', тогда выполнится операция head
-                while self.can_pop(c):
-                    self.execute_function()
+            token = self.get_token()
 
-                self.functions.append(c)
-
-            elif c == '(':
-                self.functions.append(c)
-
-            elif c == ')':
-                # Выталкиваем все операторы (функции) до открывающей скобки
-                while self.functions and self.functions[-1] != '(':
-                    self.execute_function()
-
-                # Убираем последнюю скобку '('
-                self.functions.pop()
-
-            self.prev_token = c
-
-        if self.functions or len(self.operands) > 1:
-            raise Exception('Неверное выражение: operands={}, functions={}'.format(self.operands, self.functions))
-
-        # Единственным значением списка operands будет результат выражения
-        return self.operands[0]
+        # for c in self.exp:
+        #     if c.isspace():
+        #         continue
+        #
+        #     elif c.isdigit():
+        #         # TODO: проверять значение, ведь это может быть и int
+        #         self.operands.append(float(c))
+        #
+        #     elif Parser.is_function(c):
+        #         # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
+        #         if self.prev_token and self.prev_token == '(' and (c == '+' or c == '-'):
+        #             self.operands.append(0)
+        #
+        #         # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
+        #         # оператор на вершине стека functions
+        #         # Например, с='+', а head='*', тогда выполнится операция head
+        #         while self.can_pop(c):
+        #             self.execute_function()
+        #
+        #         self.functions.append(c)
+        #
+        #     elif c == '(':
+        #         self.functions.append(c)
+        #
+        #     elif c == ')':
+        #         # Выталкиваем все операторы (функции) до открывающей скобки
+        #         while self.functions and self.functions[-1] != '(':
+        #             self.execute_function()
+        #
+        #         # Убираем последнюю скобку '('
+        #         self.functions.pop()
+        #
+        #     self.prev_token = c
+        #
+        # if self.functions or len(self.operands) > 1:
+        #     raise Exception('Неверное выражение: operands={}, functions={}'.format(self.operands, self.functions))
+        #
+        # # Единственным значением списка operands будет результат выражения
+        # return self.operands[0]
 
 
 # http://habrahabr.ru/post/50196/
@@ -116,14 +171,17 @@ class Parser:
 
 # TODO: доработать: алгоритм работает только с односимвольными числами
 # TODO: поддерживать вещественные числа
+# TODO: завести main файл
 
 
 if __name__ == '__main__':
-    exp = "(1 + 2 * 2 + 2)"
-    print(exp + " = " + str(Parser(exp).calculate_expression()))
+    Parser("(10 + 2.4 * 3.1456 - 2)").calculate_expression()
 
-    exp = "(3 + (-1 - 1))"
-    print(exp + " = " + str(Parser(exp).calculate_expression()))
-
-    exp = "(3 + (-1 + (2 * 3 - 1) - 1))"
-    print(exp + " = " + str(Parser(exp).calculate_expression()))
+    # exp = "(1 + 2 * 2 + 2)"
+    # print(exp + " = " + str(Parser(exp).calculate_expression()))
+    #
+    # exp = "(3 + (-1 - 1))"
+    # print(exp + " = " + str(Parser(exp).calculate_expression()))
+    #
+    # exp = "(3 + (-1 + (2 * 3 - 1) - 1))"
+    # print(exp + " = " + str(Parser(exp).calculate_expression()))
