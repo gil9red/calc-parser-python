@@ -116,52 +116,50 @@ class Parser:
         token = self.get_token()
 
         while token:
-            if token != ' ':
-                print('"%s", self.isfloat: %s' % (token, self.isfloat(token)))
-                import time
-                time.sleep(1)
+            if token.isspace():
+                pass
 
+            elif token.isdigit():
+                self.operands.append(int(token))
+
+            elif self.isfloat(token):
+                self.operands.append(float(token))
+
+            elif Parser.is_function(token):
+                # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
+                if self.prev_token and self.prev_token == '(' and (token == '+' or token == '-'):
+                    self.operands.append(0)
+
+                # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
+                # оператор на вершине стека functions
+                # Например, с='+', а head='*', тогда выполнится операция head
+                while self.can_pop(token):
+                    self.execute_function()
+
+                self.functions.append(token)
+
+            elif token == '(':
+                self.functions.append(token)
+
+            elif token == ')':
+                # Выталкиваем все операторы (функции) до открывающей скобки
+                while self.functions and self.functions[-1] != '(':
+                    self.execute_function()
+
+                # Убираем последнюю скобку '('
+                self.functions.pop()
+
+            # Запоминаем токен как предыдущий
+            self.prev_token = token
+
+            # Получаем новый токен
             token = self.get_token()
 
-        # for c in self.exp:
-        #     if c.isspace():
-        #         continue
-        #
-        #     elif c.isdigit():
-        #         # TODO: проверять значение, ведь это может быть и int
-        #         self.operands.append(float(c))
-        #
-        #     elif Parser.is_function(c):
-        #         # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
-        #         if self.prev_token and self.prev_token == '(' and (c == '+' or c == '-'):
-        #             self.operands.append(0)
-        #
-        #         # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
-        #         # оператор на вершине стека functions
-        #         # Например, с='+', а head='*', тогда выполнится операция head
-        #         while self.can_pop(c):
-        #             self.execute_function()
-        #
-        #         self.functions.append(c)
-        #
-        #     elif c == '(':
-        #         self.functions.append(c)
-        #
-        #     elif c == ')':
-        #         # Выталкиваем все операторы (функции) до открывающей скобки
-        #         while self.functions and self.functions[-1] != '(':
-        #             self.execute_function()
-        #
-        #         # Убираем последнюю скобку '('
-        #         self.functions.pop()
-        #
-        #     self.prev_token = c
-        #
-        # if self.functions or len(self.operands) > 1:
-        #     raise Exception('Неверное выражение: operands={}, functions={}'.format(self.operands, self.functions))
-        #
-        # # Единственным значением списка operands будет результат выражения
-        # return self.operands[0]
+        if self.functions or len(self.operands) > 1:
+            raise Exception('Неверное выражение: operands={}, functions={}'.format(self.operands, self.functions))
+
+        # Единственным значением списка operands будет результат выражения
+        return self.operands[0]
 
 
 # http://habrahabr.ru/post/50196/
@@ -169,19 +167,18 @@ class Parser:
 # http://e-learning.bmstu.ru/moodle/file.php/1/common_files/library/SPO/Compil/bmstu_iu6_Sysprogr_Compiles.pdf
 
 
-# TODO: доработать: алгоритм работает только с односимвольными числами
-# TODO: поддерживать вещественные числа
 # TODO: завести main файл
 
 
 if __name__ == '__main__':
-    Parser("(10 + 2.4 * 3.1456 - 2)").calculate_expression()
+    exp = "(10 + 2.4 * 3.1456 - 2)"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
 
-    # exp = "(1 + 2 * 2 + 2)"
-    # print(exp + " = " + str(Parser(exp).calculate_expression()))
-    #
-    # exp = "(3 + (-1 - 1))"
-    # print(exp + " = " + str(Parser(exp).calculate_expression()))
-    #
-    # exp = "(3 + (-1 + (2 * 3 - 1) - 1))"
-    # print(exp + " = " + str(Parser(exp).calculate_expression()))
+    exp = "(1 + 2 * 2 + 2)"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
+
+    exp = "(3 + (-1 - 1))"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
+
+    exp = "(3 + (-1 + (2 * 3 - 1) - 1))"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
