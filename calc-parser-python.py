@@ -7,53 +7,159 @@ __author__ = 'ipetrash'
 """Скрипт является парсером простых арифметических выражений."""
 
 
-OPERATORS = {
-    '+': 2,
-    '-': 2,
-    '*': 1,
-    '/': 1,
-}
+class Parser:
+    def __init__(self, exp):
+        self.exp = exp
+        self.prev_token = None
 
+        # Стек операндов (например, числа)
+        self.operands = []
 
-def is_function(c):
-    return c in OPERATORS.keys()
+        # Стек операторов (функций, например +, *, и т.п.)
+        self.functions = []
 
-def priority_function(c):
-    if not is_function(c):
-        raise Exception('Не найден оператор "{}"'.format(c))
+        self.pos = 0
 
-    return OPERATORS[c]
+    OPERATORS = {
+        '+': 2,
+        '-': 2,
+        '*': 1,
+        '/': 1,
+    }
 
-def execute_function(functions, operands):
-    if len(operands) < 2:
-        return
+    @staticmethod
+    def is_function(c):
+        return c in Parser.OPERATORS.keys()
 
-    a, b = operands.pop(), operands.pop()
-    f = functions.pop()
+    @staticmethod
+    def priority_function(c):
+        if not Parser.is_function(c):
+            raise Exception('Не найден оператор "{}"'.format(c))
 
-    if f == '+':
-        operands.append(b + a)
-    elif f == '-':
-        operands.append(b - a)
-    elif f == '*':
-        operands.append(b * a)
-    elif f == '/':
-        operands.append(b / a)
+        return Parser.OPERATORS[c]
 
-def can_pop(c, function):
-    if not function:
-        return False
+    def execute_function(self):
+        if len(self.operands) < 2:
+            return
 
-    head = function[-1]
-    if not is_function(head):
-        return False
+        a, b = self.operands.pop(), self.operands.pop()
+        f = self.functions.pop()
 
-    p1 = priority_function(c)
-    p2 = priority_function(head)
+        if f == '+':
+            self.operands.append(b + a)
+        elif f == '-':
+            self.operands.append(b - a)
+        elif f == '*':
+            self.operands.append(b * a)
+        elif f == '/':
+            self.operands.append(b / a)
 
-    # Чем больше значение приоритета, тем меньше он
-    # Например: операции * и / имеют больший приоритет, чем + и -
-    return p1 >= p2
+    def can_pop(self, c):
+        if not self.functions:
+            return False
+
+        head = self.functions[-1]
+        if not Parser.is_function(head):
+            return False
+
+        p1 = Parser.priority_function(c)
+        p2 = Parser.priority_function(head)
+
+        # Чем больше значение приоритета, тем меньше он
+        # Например: операции * и / имеют больший приоритет, чем + и -
+        return p1 >= p2
+
+    # TODO: мне кажется, это можно и вынести из класса
+    @staticmethod
+    def isfloat(number):
+        try:
+            float(number)
+            return True
+        except ValueError:
+            return False
+
+    def read_number(self):
+        res = ''
+        point = 0
+
+        c = self.exp[self.pos]
+
+        while c.isdigit() or c == '.':
+            if c == '.':
+                point += 1
+                if point > 1:
+                    raise Exception('Выражение не верное -- слишком '
+                                    'много точек (pos: %s)' % self.pos)
+
+            res += c
+            self.pos += 1
+
+            c = self.exp[self.pos]
+
+        return res
+
+    def get_token(self):
+        for i in range(self.pos, len(self.exp)):
+            c = self.exp[i]
+
+            if c.isdigit():
+                return self.read_number()
+            else:
+                self.pos += 1
+                return c
+
+        return None
+
+    def calculate_expression(self):
+        self.pos = 0
+
+        token = self.get_token()
+
+        while token:
+            if token.isspace():
+                pass
+
+            elif token.isdigit():
+                self.operands.append(int(token))
+
+            elif self.isfloat(token):
+                self.operands.append(float(token))
+
+            elif Parser.is_function(token):
+                # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
+                if self.prev_token and self.prev_token == '(' and (token == '+' or token == '-'):
+                    self.operands.append(0)
+
+                # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
+                # оператор на вершине стека functions
+                # Например, с='+', а head='*', тогда выполнится операция head
+                while self.can_pop(token):
+                    self.execute_function()
+
+                self.functions.append(token)
+
+            elif token == '(':
+                self.functions.append(token)
+
+            elif token == ')':
+                # Выталкиваем все операторы (функции) до открывающей скобки
+                while self.functions and self.functions[-1] != '(':
+                    self.execute_function()
+
+                # Убираем последнюю скобку '('
+                self.functions.pop()
+
+            # Запоминаем токен как предыдущий
+            self.prev_token = token
+
+            # Получаем новый токен
+            token = self.get_token()
+
+        if self.functions or len(self.operands) > 1:
+            raise Exception('Неверное выражение: operands={}, functions={}'.format(self.operands, self.functions))
+
+        # Единственным значением списка operands будет результат выражения
+        return self.operands[0]
 
 
 # http://habrahabr.ru/post/50196/
@@ -61,73 +167,18 @@ def can_pop(c, function):
 # http://e-learning.bmstu.ru/moodle/file.php/1/common_files/library/SPO/Compil/bmstu_iu6_Sysprogr_Compiles.pdf
 
 
-# TODO: доработать: алгоритм работает только с односимвольными числами
-# TODO: поддерживать вещественные числа
-
-
-def calculate_expression(exp):
-    # Стек операндов (например, числа)
-    operands = []
-
-    # Стек операторов (функций, например +, *, и т.п.)
-    functions = []
-
-    for c in exp:
-        if c.isspace():
-            continue
-
-        elif c.isdigit():
-            operands.append(float(c))
-
-        elif is_function(c):
-            # Разруливаем ситуации, когда после первой скобки '(' идет знак + или -
-            if functions and functions[-1] == '(' and (c == '+' or c == '-'):
-                operands.append(0)
-
-            # Мы можем вытолкнуть, если оператор c имеет меньший или равный приоритет, чем
-            # оператор на вершине стека functions
-            # Например, с='+', а head='*', тогда выполнится операция head
-            while can_pop(c, functions):
-                execute_function(functions, operands)
-
-            functions.append(c)
-
-        elif c == '(':
-            functions.append(c)
-
-        elif c == ')':
-            # Выталкиваем все операторы (функции) до открывающей скобки
-            while functions and functions[-1] != '(':
-                execute_function(functions, operands)
-
-            # Убираем последнюю скобку '('
-            functions.pop()
-
-    if functions or len(operands) > 1:
-        raise Exception('Неверное выражение: operands={}, functions={}'.format(operands, functions))
-
-    # Единственным значением списка operands будет результат выражения
-    return operands[0]
+# TODO: завести main файл
 
 
 if __name__ == '__main__':
-    # exp = "(((2 + ((2 * 2) + 2 * 2)) + 2 * 3) / 2 + 3 * 2 - 4)"
-    # print(exp + " = " + str(calculate_expression(exp)))
-    #
-    # exp = "(2 + 1 * 2 + 1)"
-    # print(exp + " = " + str(calculate_expression(exp)))
-    #
-    # exp = "(2 * 1 * 2 / 1 / 2 * 2 * 2 / (4 + 2))"
-    # print(exp + " = " + str(calculate_expression(exp)))
+    exp = "(10 + 2.4 * 3.1456 - 2)"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
 
-    exp = "(-2 + 1)"
-    print(exp + " = " + str(calculate_expression(exp)))
+    exp = "(1 + 2 * 2 + 2)"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
 
-    exp = "(+2 + 1 + (-1 - 1))"
-    print(exp + " = " + str(calculate_expression(exp)))
+    exp = "(3 + (-1 - 1))"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
 
-    exp = "(+2 + 1 - (-1 - 1))"
-    print(exp + " = " + str(calculate_expression(exp)))
-
-    exp = "((+2 + 1 - (-1 - 1)) * (-1))"
-    print(exp + " = " + str(calculate_expression(exp)))
+    exp = "(3 + (-1 + (2 * 3 - 1) - 1))"
+    print(exp + " = " + str(Parser(exp).calculate_expression()))
