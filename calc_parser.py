@@ -114,7 +114,7 @@ class Parser:
 
         return None
 
-    def calculate_expression(self):
+    def calc(self):
         self.__pos = 0
 
         token = self.__get_token()
