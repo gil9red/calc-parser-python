@@ -30,6 +30,7 @@ class Parser:
         '-': 2,
         '*': 1,
         '/': 1,
+        '^': 1,
     }
 
     @staticmethod
@@ -58,6 +59,8 @@ class Parser:
             self.__operands.append(b * a)
         elif f == '/':
             self.__operands.append(b / a)
+        elif f == '^':
+            self.__operands.append(b ** a)
 
     def __can_pop(self, c):
         if not self.__functions:
