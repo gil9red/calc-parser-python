@@ -19,5 +19,5 @@ if __name__ == '__main__':
     exp = "3 + (-1 + (2 * 3 - 1) - 1)"
     print(exp + " = " + str(Parser(exp).calc()))
 
-    exp = "2 ^ 3 + 2 + 3 ^ 2 + 1"
+    exp = "(2 ^ 3) + 2 + (3 ^ 2 + 1)"
     print(exp + " = " + str(Parser(exp).calc()))
