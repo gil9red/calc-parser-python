@@ -14,7 +14,11 @@ __author__ = 'ipetrash'
 
 class Parser:
     def __init__(self, exp):
-        self.__exp = exp
+        if exp[0] != '(' or exp[-1] != ')':
+            self.__exp = '(' + exp + ')'
+        else:
+            self.__exp = exp
+
         self.__prev_token = None
 
         # Стек операндов (например, числа)
